@@ -1,0 +1,1086 @@
+<html><head>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyC_vGMO5cggjkuvbyo4VXP0WfK8JCIbCnM",
+        authDomain: "gestao-1257a.firebaseapp.com",
+        databaseURL: "https://gestao-1257a-default-rtdb.europe-west1.firebasedatabase.app/",
+        projectId: "gestao-1257a",
+        storageBucket: "gestao-1257a.appspot.com",
+        messagingSenderId: "952908885231",
+        appId: "TEU_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+</script>
+<base href="https://example.com/">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pVfMktcQeWMtP9W6qppCC2Hsz6sQjGJHgAq2vRfZV5wPON6cYWYv0G3x1oPnRrZUnJwJZG5G6XijbqEJk8jA5g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <title>Sistema de Gestão de Stock</title>
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --accent-color: #3498db;
+      --bg-color: #f8f9fa;
+      --text-color: #333;
+    }
+    
+    .dark-mode {
+      --primary-color: #34495e;
+      --accent-color: #2980b9;
+      --bg-color: #222;
+      --text-color: #fff;
+    }
+    
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+    
+    .login-container {
+      max-width: 400px;
+      margin: 50px auto;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      background: white;
+    }
+    
+    .dashboard-container {
+      display: none;
+      padding: 20px;
+    }
+    
+    .stats-card {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .nav-pills .nav-link.active {
+      background-color: var(--accent-color);
+    }
+    
+    .chart-container {
+      height: 300px;
+      margin: 20px 0;
+    }
+    
+    .low-stock-alert {
+      background: #ff6b6b;
+      color: white;
+      padding: 8px;
+      border-radius: 4px;
+      margin: 5px 0;
+    }
+    
+    .error-message {
+      color: #dc3545;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+      display: none;
+    }
+    
+    .dashboard-section {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login/Register Container -->
+<div id="authContainer" class="login-container">
+  <ul class="nav nav-pills mb-3" id="auth-tab">
+    <li class="nav-item">
+      <a class="nav-link active" id="login-tab" data-bs-toggle="pill" href="https://example.com/#login">Login</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="register-tab" data-bs-toggle="pill" href="https://example.com/#register">Registro</a>
+    </li>
+  </ul>
+  
+  <div class="tab-content">
+    <div class="tab-pane fade show active" id="login">
+      <form id="loginForm">
+        <div class="mb-3">
+          <input type="email" class="form-control" id="loginEmail" placeholder="Email" required>
+          <div class="error-message" id="loginError">Email não cadastrado!</div>
+        </div>
+        <div class="mb-3">
+          <input type="password" class="form-control" id="loginPassword" placeholder="Senha" required>
+        </div>
+        <div class="mb-3 form-check">
+          <input type="checkbox" class="form-check-input" id="rememberDevice">
+          <label class="form-check-label" for="rememberDevice">Lembrar este dispositivo</label>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Entrar</button>
+      </form>
+      <p class="text-center mt-3" id="userCount">Confiado por mais de 1000 usuários!</p>
+    </div>
+    
+    <div class="tab-pane fade" id="register">
+      <form id="registerForm">
+        <div class="mb-3">
+          <input type="text" class="form-control" id="registerName" placeholder="Nome" required>
+        </div>
+        <div class="mb-3">
+          <input type="email" class="form-control" id="registerEmail" placeholder="Email" required>
+        </div>
+        <div class="mb-3">
+          <input type="password" class="form-control" id="registerPassword" placeholder="Senha" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Registrar</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Dashboard Container -->
+<div id="dashboardContainer" class="dashboard-container">
+  <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="https://example.com/">Sistema de Gestão</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" id="overviewLink">Vista Geral</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="productsLink">Produtos</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="ordersLink">Encomendas</a>
+          </li>
+        </ul>
+        <div class="dropdown">
+          <button class="btn btn-secondary dropdown-toggle" type="button" id="settingsDropdown" data-bs-toggle="dropdown">
+            <i class="fas fa-cog"></i>
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="https://example.com/#toggleTheme" id="toggleTheme">Alternar Tema</a></li>
+            <li><a class="dropdown-item" href="https://example.com/#logout" id="logout">Sair</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Overview Section -->
+  <div id="overviewSection" class="dashboard-section">
+    <div class="row">
+      <div class="col-md-3">
+        <div class="stats-card">
+          <h5>Encomendas Entregues</h5>
+          <h3 id="deliveredOrders">0</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stats-card">
+          <h5>Faturamento Total</h5>
+          <h3 id="totalRevenue">€0</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stats-card">
+          <h5>Encomendas Pendentes</h5>
+          <h3 id="pendingOrders">0</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stats-card">
+          <h5>Valor Pendente</h5>
+          <h3 id="pendingValue">€0</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="row mt-4">
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header">
+            <h5>Produtos Mais Vendidos</h5>
+            <div class="btn-group">
+              <button class="btn btn-outline-secondary" data-period="month">Este Mês</button>
+              <button class="btn btn-outline-secondary" data-period="year">Este Ano</button>
+              <button class="btn btn-outline-secondary" data-period="custom">Personalizado</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <canvas id="salesChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h5>Produtos com Estoque Baixo</h5>
+          </div>
+          <div class="card-body">
+            <div id="lowStockList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products Section -->
+  <div id="productsSection" class="dashboard-section">
+    <div class="d-flex justify-content-between mb-3">
+      <h2>Produtos</h2>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+        Adicionar Produto
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="mb-3">
+          <input type="text" class="form-control" id="productSearch" placeholder="Pesquisar produtos...">
+        </div>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Preço</th>
+                <th>Stock</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="productsList">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal fade" id="addProductModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Adicionar Produto</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="addProductForm">
+              <div class="mb-3">
+                <input type="text" class="form-control" id="productName" placeholder="Nome do Produto" required>
+              </div>
+              <div class="mb-3">
+                <input type="number" class="form-control" id="productPrice" placeholder="Preço" step="0.01" required>
+              </div>
+              <div class="mb-3">
+                <input type="number" class="form-control" id="productStock" placeholder="Quantidade" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Salvar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Orders Section -->
+  <div id="ordersSection" class="dashboard-section">
+    <div class="d-flex justify-content-between mb-3">
+      <h2>Encomendas</h2>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addOrderModal">
+        Nova Encomenda
+      </button>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card mb-3">
+          <div class="card-header">
+            <h5>Encomendas Pendentes</h5>
+          </div>
+          <div class="card-body">
+            <div id="pendingOrdersList"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h5>Encomendas Entregues</h5>
+          </div>
+          <div class="card-body">
+            <div id="deliveredOrdersList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Order Modal -->
+    <div class="modal fade" id="addOrderModal">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Nova Encomenda</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="addOrderForm">
+              <div class="mb-3">
+                <input type="text" class="form-control" id="orderName" placeholder="Nome da Encomenda">
+              </div>
+              <div class="mb-3">
+                <select class="form-control" id="productSelect" required>
+                  <option value="">Selecionar Produto</option>
+                </select>
+              </div>
+              <div class="mb-3 input-group">
+                <input type="number" class="form-control" id="orderQuantity" placeholder="Quantidade" min="1" required>
+                <button type="button" class="btn btn-secondary" id="addToOrderBtn">Adicionar</button>
+              </div>
+              <div class="table-responsive">
+                <table class="table" id="orderItemsTable">
+                  <thead>
+                    <tr>
+                      <th>Produto</th>
+                      <th>Quantidade</th>
+                      <th>Preço Unit.</th>
+                      <th>Total</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="orderItems"></tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="3" class="text-end">Total:</td>
+                      <td id="orderTotal">€0.00</td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td colspan="3" class="text-end">
+                        <button type="button" class="btn btn-warning" id="applyDiscount">-25%</button>
+                      </td>
+                      <td id="discountedTotal">€0.00</td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <button type="submit" class="btn btn-primary">Salvar Encomenda</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let db;
+const dbName = "stockManagementDB";
+const dbVersion = 1;
+const request = indexedDB.open(dbName, dbVersion);
+request.onerror = event => {
+  console.error("Database error:", event.target.error);
+};
+request.onupgradeneeded = event => {
+  db = event.target.result;
+  if (!db.objectStoreNames.contains('users')) {
+    const userStore = db.createObjectStore('users', {
+      keyPath: 'email'
+    });
+  }
+  if (!db.objectStoreNames.contains('orders')) {
+    const orderStore = db.createObjectStore('orders', {
+      keyPath: 'id',
+      autoIncrement: true
+    });
+    orderStore.createIndex('userEmail', 'userEmail', {
+      unique: false
+    });
+  }
+  if (!db.objectStoreNames.contains('products')) {
+    const productStore = db.createObjectStore('products', {
+      keyPath: 'id',
+      autoIncrement: true
+    });
+    productStore.createIndex('userEmail', 'userEmail', {
+      unique: false
+    });
+  }
+};
+request.onsuccess = event => {
+  db = event.target.result;
+};
+const dbOperations = {
+  saveUser(user) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['users'], 'readwrite');
+      const store = transaction.objectStore('users');
+      const request = store.put(user);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  getUser(email) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['users'], 'readonly');
+      const store = transaction.objectStore('users');
+      const request = store.get(email);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  saveOrder(order) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['orders'], 'readwrite');
+      const store = transaction.objectStore('orders');
+      const request = store.put(order);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  getUserOrders(email) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['orders'], 'readonly');
+      const store = transaction.objectStore('orders');
+      const index = store.index('userEmail');
+      const request = index.getAll(email);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  saveProduct(product) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['products'], 'readwrite');
+      const store = transaction.objectStore('products');
+      const request = store.put(product);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  getUserProducts(email) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['products'], 'readonly');
+      const store = transaction.objectStore('products');
+      const index = store.index('userEmail');
+      const request = index.getAll(email);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  deleteProduct(productId) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['products'], 'readwrite');
+      const store = transaction.objectStore('products');
+      const request = store.delete(productId);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  deleteOrder(orderId) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['orders'], 'readwrite');
+      const store = transaction.objectStore('orders');
+      const request = store.delete(orderId);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  getOrder(orderId) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['orders'], 'readonly');
+      const store = transaction.objectStore('orders');
+      const request = store.get(orderId);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  getProduct(productId) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['products'], 'readonly');
+      const store = transaction.objectStore('products');
+      const request = store.get(Number(productId));
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+};
+let currentUserEmail = null;
+
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  try {
+    const user = await dbOperations.getUser(email);
+    if (!user) {
+      document.getElementById('loginError').style.display = 'block';
+      return;
+    }
+    document.getElementById('loginError').style.display = 'none';
+    if (user.password === password) {
+      currentUserEmail = email;
+      document.getElementById('authContainer').style.display = 'none';
+      document.getElementById('dashboardContainer').style.display = 'block';
+      await loadDashboardData();
+    } else {
+      alert('Senha incorreta!');
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    alert('Erro ao fazer login. Tente novamente.');
+  }
+});
+
+document.getElementById('registerForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = document.getElementById('registerName').value.trim();
+  const email = document.getElementById('registerEmail').value.trim();
+  const password = document.getElementById('registerPassword').value;
+  try {
+    const existingUser = await dbOperations.getUser(email);
+    if (existingUser) {
+      alert('Email já cadastrado!');
+      return;
+    }
+    await dbOperations.saveUser({
+      name,
+      email,
+      password
+    });
+    e.target.reset();
+    alert('Registro realizado com sucesso!');
+    document.getElementById('login-tab').click();
+  } catch (error) {
+    console.error('Registration error:', error);
+    alert('Erro ao registrar. Tente novamente.');
+  }
+});
+
+const ctx = document.getElementById('salesChart').getContext('2d');
+const salesChart = new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Vendas por Produto',
+      data: [],
+      backgroundColor: 'rgba(54, 162, 235, 0.2)',
+      borderColor: 'rgba(54, 162, 235, 1)',
+      borderWidth: 1
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  }
+});
+
+document.getElementById('toggleTheme').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.body.classList.toggle('dark-mode');
+});
+
+document.getElementById('logout').addEventListener('click', async e => {
+  e.preventDefault();
+  currentUserEmail = null;
+  document.getElementById('dashboardContainer').style.display = 'none';
+  document.getElementById('authContainer').style.display = 'block';
+  document.getElementById('loginForm').reset();
+  document.getElementById('loginError').style.display = 'none';
+});
+
+async function loadDashboardData() {
+  try {
+    const orders = await dbOperations.getUserOrders(currentUserEmail);
+    const products = await dbOperations.getUserProducts(currentUserEmail);
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    const monthOrders = orders.filter(order => {
+      const orderDate = new Date(order.date);
+      return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+    });
+    const deliveredOrders = monthOrders.filter(order => order.status === 'delivered');
+    const pendingOrders = monthOrders.filter(order => order.status === 'pending');
+    const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0);
+    const pendingValue = pendingOrders.reduce((sum, order) => sum + order.total, 0);
+    updateStats({
+      deliveredOrders: deliveredOrders.length,
+      revenue: totalRevenue,
+      pendingOrders: pendingOrders.length,
+      pendingValue: pendingValue
+    });
+    const productSales = products.map(product => ({
+      name: product.name,
+      sales: monthOrders.reduce((sum, order) => {
+        const orderItem = order.items.find(item => item.productId === product.id);
+        return sum + (orderItem ? orderItem.quantity : 0);
+      }, 0)
+    })).sort((a, b) => b.sales - a.sales).slice(0, 5);
+    updateChart(productSales);
+    const lowStockProducts = products.filter(product => product.stock <= 5).map(product => ({
+      name: product.name,
+      stock: product.stock
+    }));
+    updateLowStockList(lowStockProducts);
+    showSection('overview');
+    productManager = new ProductManager(currentUserEmail);
+    orderManager = new OrderManager(currentUserEmail);
+    await loadProducts();
+    await loadOrders();
+    await populateProductSelect();
+  } catch (error) {
+    console.error('Error loading dashboard data:', error);
+    alert('Erro ao carregar dados do painel.');
+  }
+}
+
+function updateStats(data) {
+  document.getElementById('deliveredOrders').textContent = data.deliveredOrders;
+  document.getElementById('totalRevenue').textContent = `€${data.revenue.toFixed(2)}`;
+  document.getElementById('pendingOrders').textContent = data.pendingOrders;
+  document.getElementById('pendingValue').textContent = `€${data.pendingValue.toFixed(2)}`;
+}
+
+function updateChart(data) {
+  salesChart.data.labels = data.map(item => item.name);
+  salesChart.data.datasets[0].data = data.map(item => item.sales);
+  salesChart.update();
+}
+
+function updateLowStockList(products) {
+  const container = document.getElementById('lowStockList');
+  container.innerHTML = '';
+  products.forEach(product => {
+    const alert = document.createElement('div');
+    alert.className = 'low-stock-alert';
+    alert.textContent = `${product.name} - ${product.stock} unidades`;
+    container.appendChild(alert);
+  });
+}
+
+document.getElementById('overviewLink').addEventListener('click', e => {
+  e.preventDefault();
+  showSection('overview');
+});
+
+document.getElementById('productsLink').addEventListener('click', e => {
+  e.preventDefault();
+  showSection('products');
+});
+
+document.getElementById('ordersLink').addEventListener('click', e => {
+  e.preventDefault();
+  showSection('orders');
+});
+
+function showSection(section) {
+  document.querySelectorAll('.dashboard-section').forEach(el => {
+    el.style.display = 'none';
+  });
+  const sectionEl = document.getElementById(section + 'Section');
+  if (sectionEl) {
+    sectionEl.style.display = 'block';
+  }
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.classList.remove('active');
+  });
+  document.getElementById(section + 'Link').classList.add('active');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  setInterval(() => {
+    const count = Math.floor(Math.random() * 1000) + 1000;
+    document.getElementById('userCount').textContent = `Confiado por mais de ${count} usuários!`;
+  }, 5000);
+});
+
+class ProductManager {
+  constructor(userEmail) {
+    this.userEmail = userEmail;
+  }
+
+  async addProduct(product) {
+    product.userEmail = this.userEmail;
+    return await dbOperations.saveProduct(product);
+  }
+
+  async updateProduct(product) {
+    return await dbOperations.saveProduct(product);
+  }
+
+  async deleteProduct(productId) {
+    return await dbOperations.deleteProduct(productId);
+  }
+
+  async getProducts() {
+    return await dbOperations.getUserProducts(this.userEmail);
+  }
+}
+
+class OrderManager {
+  constructor(userEmail) {
+    this.userEmail = userEmail;
+  }
+
+  async createOrder(order) {
+    order.userEmail = this.userEmail;
+    order.status = 'pending';
+    order.date = new Date();
+    return await dbOperations.saveOrder(order);
+  }
+
+  async updateOrder(order) {
+    return await dbOperations.saveOrder(order);
+  }
+
+  async deleteOrder(orderId) {
+    return await dbOperations.deleteOrder(orderId);
+  }
+
+  async confirmDelivery(orderId) {
+    const order = await dbOperations.getOrder(orderId);
+    order.status = 'delivered';
+    await dbOperations.saveOrder(order);
+    
+    // Update product stock
+    for (const item of order.items) {
+      const product = await dbOperations.getProduct(item.productId);
+      if (product) {
+        product.stock -= item.quantity;
+        await dbOperations.saveProduct(product);
+      }
+    }
+    await loadDashboardData();
+  }
+
+  async getOrders() {
+    return await dbOperations.getUserOrders(this.userEmail);
+  }
+}
+
+let productManager;
+let orderManager;
+
+async function loadProducts() {
+  const products = await productManager.getProducts();
+  const tbody = document.getElementById('productsList');
+  tbody.innerHTML = '';
+  
+  products.forEach(product => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${product.name}</td>
+      <td>€${product.price.toFixed(2)}</td>
+      <td>${product.stock}</td>
+      <td>
+        <button class="btn btn-sm btn-primary edit-product" data-id="${product.id}">Editar</button>
+        <button class="btn btn-sm btn-danger delete-product" data-id="${product.id}">Remover</button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  // Add event listeners for edit and delete buttons
+  document.querySelectorAll('.edit-product').forEach(button => {
+    button.addEventListener('click', () => {
+      const productId = button.getAttribute('data-id');
+      openEditProductModal(productId);
+    });
+  });
+
+  document.querySelectorAll('.delete-product').forEach(button => {
+    button.addEventListener('click', async () => {
+      const productId = button.getAttribute('data-id');
+      if (confirm('Tem certeza de que deseja remover este produto?')) {
+        await productManager.deleteProduct(Number(productId));
+        await loadProducts();
+        await loadDashboardData();
+      }
+    });
+  });
+}
+
+async function openEditProductModal(productId) {
+  const product = await dbOperations.getProduct(productId);
+  if (product) {
+    const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
+    document.getElementById('editProductName').value = product.name;
+    document.getElementById('editProductPrice').value = product.price;
+    document.getElementById('editProductStock').value = product.stock;
+    document.getElementById('editProductId').value = product.id;
+    modal.show();
+  }
+}
+
+// Add Edit Product Modal
+document.body.insertAdjacentHTML('beforeend', `
+  <div class="modal fade" id="editProductModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar Produto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editProductForm">
+            <div class="mb-3">
+              <input type="text" class="form-control" id="editProductName" placeholder="Nome do Produto" required>
+            </div>
+            <div class="mb-3">
+              <input type="number" class="form-control" id="editProductPrice" placeholder="Preço" step="0.01" required>
+            </div>
+            <div class="mb-3">
+              <input type="number" class="form-control" id="editProductStock" placeholder="Quantidade" required>
+            </div>
+            <input type="hidden" id="editProductId">
+            <button type="submit" class="btn btn-primary">Atualizar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+`);
+
+document.getElementById('editProductForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = document.getElementById('editProductName').value.trim();
+  const price = parseFloat(document.getElementById('editProductPrice').value);
+  const stock = parseInt(document.getElementById('editProductStock').value);
+  const id = Number(document.getElementById('editProductId').value);
+  try {
+    await productManager.updateProduct({ id, name, price, stock, userEmail: currentUserEmail });
+    document.getElementById('editProductForm').reset();
+    bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
+    await loadProducts();
+    await loadDashboardData();
+    await populateProductSelect();
+  } catch (error) {
+    console.error('Error updating product:', error);
+    alert('Erro ao atualizar o produto. Tente novamente.');
+  }
+});
+
+document.getElementById('addProductForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const product = {
+    name: document.getElementById('productName').value.trim(),
+    price: parseFloat(document.getElementById('productPrice').value),
+    stock: parseInt(document.getElementById('productStock').value),
+    userEmail: currentUserEmail
+  };
+  
+  await productManager.addProduct(product);
+  await loadProducts();
+  await loadDashboardData();
+  await populateProductSelect();
+  e.target.reset();
+  bootstrap.Modal.getInstance(document.getElementById('addProductModal')).hide();
+});
+
+async function loadOrders() {
+  const orders = await orderManager.getOrders();
+  const pendingList = document.getElementById('pendingOrdersList');
+  const deliveredList = document.getElementById('deliveredOrdersList');
+  
+  pendingList.innerHTML = '';
+  deliveredList.innerHTML = '';
+  
+  orders.forEach(order => {
+    const orderElement = createOrderElement(order);
+    if (order.status === 'pending') {
+      pendingList.appendChild(orderElement);
+    } else {
+      deliveredList.appendChild(orderElement);
+    }
+  });
+}
+
+function createOrderElement(order) {
+  const div = document.createElement('div');
+  div.className = 'card mb-2';
+  div.innerHTML = `
+    <div class="card-body">
+      <h6>${order.name}</h6>
+      <p>Total: €${order.total.toFixed(2)}</p>
+      ${order.status === 'pending' ? `
+        <button class="btn btn-sm btn-success confirm-delivery" data-id="${order.id}">
+          Confirmar Entrega
+        </button>
+        <button class="btn btn-sm btn-danger delete-order" data-id="${order.id}">
+          Cancelar
+        </button>
+      ` : ''}
+    </div>
+  `;
+  
+  if (order.status === 'pending') {
+    div.querySelector('.confirm-delivery').addEventListener('click', async () => {
+      if (confirm('Confirmar entrega desta encomenda?')) {
+        await orderManager.confirmDelivery(order.id);
+      }
+    });
+    
+    div.querySelector('.delete-order').addEventListener('click', async () => {
+      if (confirm('Tem certeza de que deseja cancelar esta encomenda?')) {
+        await orderManager.deleteOrder(order.id);
+        await loadOrders();
+        await loadDashboardData();
+      }
+    });
+  }
+  
+  return div;
+}
+
+document.getElementById('addToOrderBtn').addEventListener('click', () => {
+  const productId = document.getElementById('productSelect').value;
+  const quantity = parseInt(document.getElementById('orderQuantity').value);
+  if (productId && quantity > 0) {
+    addItemToOrder(productId, quantity);
+  } else {
+    alert('Por favor, selecione um produto e uma quantidade válida.');
+  }
+});
+
+document.getElementById('applyDiscount').addEventListener('click', () => {
+  applyDiscount();
+});
+
+document.getElementById('addOrderForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  await saveOrder();
+});
+
+async function addItemToOrder(productId, quantity) {
+  const product = await dbOperations.getProduct(productId);
+  if (!product) {
+    alert('Produto não encontrado!');
+    return;
+  }
+
+  const orderItems = document.getElementById('orderItems');
+  
+  // Check if product is already added
+  const existingRow = Array.from(orderItems.children).find(row => row.getAttribute('data-id') == product.id);
+  if (existingRow) {
+    const currentQuantity = parseInt(existingRow.querySelector('.item-quantity').textContent);
+    existingRow.querySelector('.item-quantity').textContent = currentQuantity + quantity;
+    existingRow.querySelector('.item-total').textContent = `€${((currentQuantity + quantity) * product.price).toFixed(2)}`;
+  } else {
+    const row = document.createElement('tr');
+    row.setAttribute('data-id', product.id);
+    row.innerHTML = `
+      <td>${product.name}</td>
+      <td class="item-quantity">${quantity}</td>
+      <td>€${product.price.toFixed(2)}</td>
+      <td class="item-total">€${(quantity * product.price).toFixed(2)}</td>
+      <td><button type="button" class="btn btn-sm btn-danger remove-item">Remover</button></td>
+    `;
+    orderItems.appendChild(row);
+
+    row.querySelector('.remove-item').addEventListener('click', () => {
+      row.remove();
+      updateOrderTotals();
+    });
+  }
+  updateOrderTotals();
+  document.getElementById('addOrderForm').reset();
+}
+
+function updateOrderTotals() {
+  const orderItems = document.getElementById('orderItems').children;
+  let total = 0;
+  Array.from(orderItems).forEach(row => {
+    const itemTotal = parseFloat(row.querySelector('.item-total').textContent.replace('€', ''));
+    total += itemTotal;
+  });
+  document.getElementById('orderTotal').textContent = `€${total.toFixed(2)}`;
+  document.getElementById('discountedTotal').textContent = `€${total.toFixed(2)}`;
+}
+
+function applyDiscount() {
+  const orderTotal = parseFloat(document.getElementById('orderTotal').textContent.replace('€', ''));
+  if (orderTotal > 0) {
+    const discountedTotal = orderTotal * 0.75;
+    document.getElementById('discountedTotal').textContent = `€${discountedTotal.toFixed(2)}`;
+  }
+}
+
+async function saveOrder() {
+  const orderName = document.getElementById('orderName').value.trim();
+  const orderItemsRows = document.getElementById('orderItems').children;
+  
+  // Removed the requirement to have at least one item
+  // if (orderItemsRows.length === 0) {
+  //   alert('Adicione pelo menos um item à encomenda.');
+  //   return;
+  // }
+
+  const orderItems = [];
+  for (let row of orderItemsRows) {
+    const productId = Number(row.getAttribute('data-id'));
+    const quantity = parseInt(row.querySelector('.item-quantity').textContent);
+    const price = parseFloat(row.querySelector('td:nth-child(3)').textContent.replace('€', ''));
+    const total = quantity * price;
+    orderItems.push({
+      productId,
+      quantity,
+      price,
+      total
+    });
+  }
+  const total = orderItems.reduce((sum, item) => sum + item.total, 0);
+  const discountedTotalText = document.getElementById('discountedTotal').textContent;
+  const discountedTotal = parseFloat(discountedTotalText.replace('€', ''));
+  const order = {
+    name: orderName || 'Encomenda Sem Nome',
+    items: orderItems,
+    total: discountedTotal < total ? discountedTotal : total,
+    originalTotal: total,
+    discountApplied: discountedTotal < total
+  };
+  await orderManager.createOrder(order);
+  await loadOrders();
+  await loadDashboardData();
+  document.getElementById('addOrderForm').reset();
+  document.getElementById('orderItems').innerHTML = '';
+  document.getElementById('orderTotal').textContent = '€0.00';
+  document.getElementById('discountedTotal').textContent = '€0.00';
+  bootstrap.Modal.getInstance(document.getElementById('addOrderModal')).hide();
+}
+
+async function populateProductSelect() {
+  const select = document.getElementById('productSelect');
+  select.innerHTML = '<option value="">Selecionar Produto</option>';
+  const products = await dbOperations.getUserProducts(currentUserEmail);
+  products.forEach(product => {
+    const option = document.createElement('option');
+    option.value = product.id;
+    option.textContent = `${product.name} - €${product.price.toFixed(2)} (${product.stock} em stock)`;
+    select.appendChild(option);
+  });
+}
+</script>
+
+<!-- Edit Product Modal Scripts -->
+<script>
+  // Scripts are already included above
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
